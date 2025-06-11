@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Booking Summary</title>
+  <link rel="stylesheet" href="styles.css" />
+<style>
+  .summary, .form-section {
+    max-width: 700px;
+    margin: 20px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .form-section label,
+  .form-section input {
+    display: block;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+
+  .form-section input {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+
+  .form-section button {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #2980b9;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .form-section button:hover {
+    background-color: #3498db;
+  }
+
+  .summary-item { margin-bottom: 10px; }
+  .total { font-weight: bold; font-size: 1.2rem; margin-top: 15px; }
+</style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+  </header>
+
+  <section class="hero">
+    <h1>Booking Summary</h1>
+    <p>Review your booking and provide your information below.</p>
+  </section>
+
+  <section class="summary" id="bookingSummary"></section>
+
+ <form class="form-section" id="customerForm">
+    <label>First Name</label><input type="text" id="firstName" required>
+    <label>Last Name</label><input type="text" id="lastName" required>
+    <label>Email</label><input type="email" id="email" required pattern="^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$" title="Please enter a valid email address (e.g., example@domain.com)">
+    <label>Phone Number</label><input type="text" id="phoneNumber" required pattern="^\+\d{5,}$" title="Phone number must start with a '+' for the county code followed by at least 5 digits (e.g., +123456)">
+    <label>Address</label><input type="text" id="address" required>
+    <label>Credit Card Number</label><input type="text" id="creditcars" required pattern="^(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|6(?:011|5[0-9]{2})[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})$" title="Please enter a valid credit card number.">
+    <button type="submit">Book Now</button>
+  </form>
+  
+  <script>
+    const hotelId = sessionStorage.getItem("hotelId");
+    const serviceIds = JSON.parse(sessionStorage.getItem("selectedServiceIds") || "[]");
+    const checkin = sessionStorage.getItem("checkin");
+    const checkout = sessionStorage.getItem("checkout");
+    const guests = sessionStorage.getItem("guests");
+    const rooms = JSON.parse(sessionStorage.getItem("rooms") || "[]"); 
+	const days = Math.ceil((new Date(sessionStorage.getItem("checkout")) - new Date(sessionStorage.getItem("checkin"))) /(1000 * 60 * 60 * 24));
+
+    let totalPrice = 0;
+
+    async function loadSummary() {
+    	  const summaryDiv = document.getElementById("bookingSummary");
+
+    	  const rooms = JSON.parse(sessionStorage.getItem("rooms") || "[]");
+    	  const days = Math.ceil(
+    	    (new Date(sessionStorage.getItem("checkout")) - new Date(sessionStorage.getItem("checkin"))) /
+    	    (1000 * 60 * 60 * 24)
+    	  );
+    	  const hotelId = sessionStorage.getItem("hotelId");
+    	  const serviceIds = JSON.parse(sessionStorage.getItem("selectedServiceIds") || "[]");
+
+    	  let grandTotal = 0;
+    	  let html = "";
+
+    	  // ROOM summary
+    	  rooms.forEach(room => {
+    	    const roomTotal = room.basePrice * room.count * days;
+    	    grandTotal += roomTotal;
+
+    	    html += `
+    	      <div class="summary-item">
+    	        <strong>Room:</strong> ${room.category}<br>
+    	        <strong>Price:</strong> ${room.basePrice.toFixed(2)} € × ${room.count} room(s) × ${days} night(s)<br>
+    	        <strong>Subtotal:</strong> ${roomTotal.toFixed(2)} €
+    	      </div><hr>
+    	    `;
+    	  });
+
+    	  //  SERVICE summary 
+    	  if (serviceIds.length > 0) {
+    	    const allServicesRes = await fetch(`http://localhost:8080/HotelManagementSystem/api/services?hotelId=${hotelId}`);
+    	    const allServices = await allServicesRes.json();
+    	    const selectedServices = allServices.filter(s => serviceIds.includes(s.id));
+
+    	    selectedServices.forEach(service => {
+    	      const serviceTotal = service.price * days;
+    	      grandTotal += serviceTotal;
+
+    	      html += `
+    	        <div class="summary-item">
+    	          <strong>Service:</strong> ${service.name}<br>
+    	          <strong>Price:</strong> ${service.price.toFixed(2)} € × ${days} night(s)<br>
+    	          <strong>Subtotal:</strong> ${serviceTotal.toFixed(2)} €
+    	        </div><hr>
+    	      `;
+    	    });
+    	  }
+
+    	  // TOTAL
+    	  html += `
+    	    <div class="summary-item" style="margin-top: 20px;">
+    	      <strong>Total:</strong> €${grandTotal.toFixed(2)}
+    	    </div>
+    	  `;
+
+    	  summaryDiv.innerHTML = html;
+    	}
+
+
+
+    document.getElementById("customerForm").addEventListener("submit", async function (e) {
+    	  e.preventDefault();
+
+    	  // Collect customer info
+    	  const customer = {
+    	    firstName: document.getElementById("firstName").value,
+    	    lastName: document.getElementById("lastName").value,
+    	    email: document.getElementById("email").value,
+    	    phoneNumber: document.getElementById("phoneNumber").value,
+    	    address: document.getElementById("address").value
+    	  };
+
+    	  // Create the customer
+    	  let customerId;
+    	  try {
+    	    const res = await fetch("http://localhost:8080/HotelManagementSystem/api/customers", {
+    	      method: "POST",
+    	      headers: { "Content-Type": "application/json" },
+    	      body: JSON.stringify(customer)
+    	    });
+
+    	    if (!res.ok) {
+    	      const error = await res.json();
+    	      alert("Failed to create customer: " + (error.error || "Unknown error"));
+    	      return;
+    	    }
+
+    	    const savedCustomer = await res.json();
+    	    customerId = savedCustomer.id;
+
+    	    if (!customerId) {
+    	      alert("Server did not return a customer ID.");
+    	      return;
+    	    }
+    	  } catch (err) {
+    	    alert("Error creating customer.");
+    	    console.error(err);
+    	    return;
+    	  }
+
+    	  //Prepare and send booking
+				
+
+				const booking = {
+				  customerId: customerId,
+				  hotelId: Number(hotelId),
+				  checkInDate: sessionStorage.getItem("checkin"),
+				  checkOutDate: sessionStorage.getItem("checkout"),
+				  status: "confirmed",
+				  rooms: rooms
+				};
+
+    	  
+
+    	  try {
+    	    const bookingRes = await fetch("http://localhost:8080/HotelManagementSystem/api/bookings", {
+    	    	  method: "POST",
+    	    	  headers: { "Content-Type": "application/json" },
+    	    	  body: JSON.stringify(booking)
+    	    	});
+
+    	    if (bookingRes.ok) {
+    	    	  const bookingData = await bookingRes.json();
+    	    	  const newBookingId = bookingData.bookingId;
+
+    	    	  // Add services
+    	    	  for (const serviceId of serviceIds) {
+    	    	    await fetch("http://localhost:8080/HotelManagementSystem/api/booking-services", { // Corrected URL here
+    	    	      method: "POST",
+    	    	      headers: { "Content-Type": "application/json" },
+    	    	      body: JSON.stringify({
+    	    	        bookingId: newBookingId,
+    	    	        serviceId: serviceId,
+    	    	        quantity: days
+
+    	    	      })
+    	    	    });
+
+    	    	  }
+    	    	  
+                  // Clear session storage 
+                  sessionStorage.removeItem("hotelId");
+                  sessionStorage.removeItem("selectedServiceIds");
+                  sessionStorage.removeItem("checkin");
+                  sessionStorage.removeItem("checkout");
+    	    	  
+                  // Redirect to confirmation page with booking ID
+                  window.location.href = `booking-confirmation.html?bookingId=${newBookingId}`;
+    	    	} else {
+    	      const error = await bookingRes.json();
+    	      alert("Booking failed: " + (error.error || "Unknown error"));
+    	    }
+    	  } catch (err) {
+    	    alert("An error occurred while submitting the booking.");
+    	    console.error(err);
+    	  }
+    	});
+
+
+    loadSummary();
+  </script>
+</body>
+</html>

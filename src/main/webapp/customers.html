@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Manage Customers</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Add some basic styling for the customer page */
+        .container {
+            padding: 20px;
+        }
+        .search-section {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .customer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .customer-table th, .customer-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .customer-table th {
+            background-color: #f2f2f2;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            position: relative;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: calc(100% - 10px);
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .button-group {
+            text-align: right;
+        }
+            .customer-table button {
+        margin-right: 10px; /* Add some space between buttons */
+        padding: 8px 12px;
+        cursor: pointer;
+        border: none;
+        border-radius: 4px;
+        font-weight: bold;
+    }
+
+    .customer-table button:last-child {
+        margin-right: 0; /* No margin for the last button */
+    }
+
+    .customer-table button.edit-button {
+        background-color: #4CAF50; /* Green for Edit */
+        color: white;
+    }
+
+    .customer-table button.delete-button {
+        background-color: #f44336; /* Red for Delete */
+        color: white;
+    }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="index.html">Check Availability</a></li>
+                <li><a href="bookings.html">Bookings</a></li>
+                <li><a href="hotel.html">Hotels & Rooms</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="container">
+        <h1>Manage Customers</h1>
+
+        <div class="search-section">
+            <input type="text" id="searchInput" placeholder="Search by last name or email..." />
+            <button onclick="searchCustomers()">Search</button>
+            <button onclick="loadAllCustomers()">Show All Customers</button>
+        </div>
+
+        <table class="customer-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                    <th>Phone Number</th>
+                    <th>Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="customerTableBody">
+                </tbody>
+        </table>
+    </div>
+
+    <div id="editCustomerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h2>Edit Customer</h2>
+            <form id="editCustomerForm">
+                <input type="hidden" id="editCustomerId" />
+                <div class="form-group">
+                    <label for="editFirstName">First Name:</label>
+                    <input type="text" id="editFirstName" name="firstName" required />
+                </div>
+                <div class="form-group">
+                    <label for="editLastName">Last Name:</label>
+                    <input type="text" id="editLastName" name="lastName" required />
+                </div>
+                <div class="form-group">
+                    <label for="editEmail">Email:</label>
+                    <input type="email" id="editEmail" name="email" required />
+                </div>
+                <div class="form-group">
+                    <label for="editPhoneNumber">Phone Number:</label>
+                    <input type="text" id="editPhoneNumber" name="phoneNumber" />
+                </div>
+                <div class="form-group">
+                    <label for="editAddress">Address:</label>
+                    <input type="text" id="editAddress" name="address" />
+                </div>
+                <div class="button-group">
+                    <button type="button" onclick="saveCustomer()">Save Changes</button>
+                    <button type="button" onclick="closeModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 HotelSys. All rights reserved.</p>
+    </footer>
+
+    <script>
+        // No initial load on DOMContentLoaded
+
+        async function loadAllCustomers() {
+            try {
+                const response = await fetch('/HotelManagementSystem/api/customers');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const customers = await response.json();
+                displayCustomers(customers);
+            } catch (error) {
+                console.error('Error fetching customers:', error);
+                document.getElementById('customerTableBody').innerHTML = '<tr><td colspan="7">Error loading customers.</td></tr>';
+            }
+        }
+
+        async function searchCustomers() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (!searchTerm) {
+                alert('Please enter a search term (last name or email).');
+                return;
+            }
+
+            try {
+                let url;
+                if (searchTerm.includes('@')) {
+                    url = `/HotelManagementSystem/api/customers?email=${encodeURIComponent(searchTerm)}`;
+                } else {
+                    url = `/HotelManagementSystem/api/customers?lastName=${encodeURIComponent(searchTerm)}`;
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const customers = await response.json();
+                displayCustomers(customers);
+            } catch (error) {
+                console.error('Error searching customers:', error);
+                document.getElementById('customerTableBody').innerHTML = '<tr><td colspan="7">Error searching customers.</td></tr>';
+            }
+        }
+
+        function displayCustomers(customers) {
+            const tableBody = document.getElementById('customerTableBody');
+            tableBody.innerHTML = ''; // Clear existing rows
+
+            if (customers.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="7">No customers found.</td></tr>';
+                return;
+            }
+
+            customers.forEach(customer => {
+                const row = tableBody.insertRow();
+                row.insertCell().textContent = customer.id;
+                row.insertCell().textContent = customer.firstName;
+                row.insertCell().textContent = customer.lastName;
+                row.insertCell().textContent = customer.email;
+                row.insertCell().textContent = customer.phoneNumber;
+                row.insertCell().textContent = customer.address;
+
+                const actionsCell = row.insertCell();
+                const editButton = document.createElement('button');
+                editButton.textContent = 'Edit';
+                editButton.classList.add('edit-button');
+                editButton.onclick = () => openEditModal(customer);
+                actionsCell.appendChild(editButton);
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.classList.add('delete-button');
+                deleteButton.onclick = () => deleteCustomer(customer.id);
+                actionsCell.appendChild(deleteButton);
+            });
+        }
+
+        function openEditModal(customer) {
+            document.getElementById('editCustomerId').value = customer.id;
+            document.getElementById('editFirstName').value = customer.firstName;
+            document.getElementById('editLastName').value = customer.lastName;
+            document.getElementById('editEmail').value = customer.email;
+            document.getElementById('editPhoneNumber').value = customer.phoneNumber;
+            document.getElementById('editAddress').value = customer.address;
+            document.getElementById('editCustomerModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('editCustomerModal').style.display = 'none';
+        }
+
+        async function saveCustomer() {
+            const updatedCustomer = {
+                id: document.getElementById('editCustomerId').value,
+                firstName: document.getElementById('editFirstName').value,
+                lastName: document.getElementById('editLastName').value,
+                email: document.getElementById('editEmail').value,
+                phoneNumber: document.getElementById('editPhoneNumber').value,
+                address: document.getElementById('editAddress').value
+            };
+
+            try {
+                const response = await fetch('/HotelManagementSystem/api/customers', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedCustomer)
+                });
+
+                if (response.ok) {
+                    alert('Customer updated successfully!');
+                    closeModal();
+                    // Determine how to refresh the list based on the current state
+                    const searchTerm = document.getElementById('searchInput').value.trim();
+                    if (searchTerm) {
+                        searchCustomers(); // Re-run the search if a search term was active
+                    } else {
+
+                        document.getElementById('customerTableBody').innerHTML = '<tr><td colspan="7">Customer updated. Click "Search" or "Show All Customers" to refresh.</td></tr>';
+                    }
+                } else {
+                    alert('Failed to update customer.');
+                }
+            } catch (error) {
+                console.error('Error updating customer:', error);
+                alert('An error occurred while updating the customer.');
+            }
+        }
+
+        async function deleteCustomer(id) {
+            if (confirm('Are you sure you want to delete this customer?')) {
+                try {
+                    const response = await fetch(`/HotelManagementSystem/api/customers?id=${id}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (response.ok) {
+                        alert('Customer deleted successfully!');
+                        const searchTerm = document.getElementById('searchInput').value.trim();
+                        if (searchTerm) {
+                            searchCustomers(); // Re-run the search if a search term was active
+                        } else {
+
+                            document.getElementById('customerTableBody').innerHTML = '<tr><td colspan="7">Customer deleted. Click "Search" or "Show All Customers" to refresh.</td></tr>';
+                        }
+                    } else {
+                        alert('Failed to delete customer.');
+                    }
+                } catch (error) {
+                    console.error('Error deleting customer:', error);
+                    alert('An error occurred while deleting the customer.');
+                }
+            }
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        searchCustomers();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

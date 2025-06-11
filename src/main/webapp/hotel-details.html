@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Hotel Details</title>
+        <link rel="stylesheet" href="hotel.css" />
+    </head>
+    <body>
+        <header class="navbar">
+            <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+            <nav>
+                <ul>
+                    <li><a href="hotel.html">Back to Hotels</a></li>
+                </ul>
+            </nav>
+        </header>
+
+        <section class="hero">
+            <h1 id="hotelName">Loading...</h1>
+            <p id="hotelDescription"></p>
+        </section>
+
+        <section class="hotel-detail-section">
+            <div class="hotel-info-card">
+                <img id="hotelImage" src="" alt="Image of hotel" class="detail-image" />
+                <div class="hotel-details-text">
+                    <p><strong>Address:</strong> <span id="hotelAddress"></span></p>
+                    <p><strong>Country:</strong> <span id="hotelCountry"></span></p>
+                    <p><strong>City:</strong> <span id="hotelCity"></span></p>
+                    <p><strong>Phone:</strong> <span id="hotelPhone"></span></p>
+                    <p><strong>Email:</strong> <span id="hotelEmail"></span></p>
+                    <div id="hotelActions">
+                        <button class="action-btn save-btn" onclick="startHotelEdit()">📝 Edit</button>
+                        <button class="delete-btn" onclick="deleteHotel()">🗑 Delete</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="tab-container">
+            <div class="tab-header">
+                <button class="tab-btn active" onclick="switchTab('rooms')">Rooms</button>
+                <button class="tab-btn" onclick="switchTab('services')">Services</button>
+                <button class="tab-btn" onclick="switchTab('staff')">Staff</button> </div>
+
+            <div id="roomsTab" class="tab-content">
+                <div class="room-section-header">
+                    <h2>Hotel Rooms</h2>
+                    <a id="addRoomBtn" href="#" class="tab-btn">+ Add Room</a>
+                </div>
+                <div class="room-list" id="roomList"></div>
+            </div>
+
+			<div id="servicesTab" class="tab-content" style="display: none;">
+                <div class="service-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Hotel Services</h2>
+                    <button id="addServiceBtn" class="tab-btn">+ Add Service</button>
+                </div>
+                <div id="serviceList" class="service-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                    </div>
+
+                <div id="serviceFormContainer" style="display: none; margin-top: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 id="formTitle" style="margin-top: 0; color: #333;">Add New Service</h3>
+                    <form id="serviceForm" style="display: flex; flex-direction: column; gap: 15px;">
+                        <input type="hidden" id="serviceId">
+                        <div>
+                            <label for="serviceName" style="display: block; margin-bottom: 5px; font-weight: bold;">Service Name:</label>
+                            <input type="text" id="serviceName" required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;">
+                        </div>
+                        <div>
+                            <label for="servicePrice" style="display: block; margin-bottom: 5px; font-weight: bold;">Price:</label>
+                            <input type="number" id="servicePrice" step="0.01" required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;">
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                        	<button type="submit" class="tab-btn save-btn" id="saveServiceBtn">Save Service</button>
+							<button type="button" class="tab-btn cancel-btn" id="cancelServiceFormBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="staffTab" class="tab-content" style="display: none;">
+                <div class="staff-section-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Hotel Staff</h2>
+                    <button id="addStaffBtn" class="tab-btn">+ Add Staff</button>
+                </div>
+                <div id="staffList" class="staff-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                </div>
+
+                <div id="staffFormContainer" style="display: none; margin-top: 30px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <h3 id="staffFormTitle" style="margin-top: 0; color: #333;">Add New Staff Member</h3>
+                    <form id="staffForm" style="display: flex; flex-direction: column; gap: 15px;">
+                        <input type="hidden" id="staffId">
+                        <div>
+                            <label for="staffName" style="display: block; margin-bottom: 5px; font-weight: bold;">Name:</label>
+                            <input type="text" id="staffName" required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;">
+                        </div>
+                        <div>
+                            <label for="staffRole" style="display: block; margin-bottom: 5px; font-weight: bold;">Role:</label>
+                            <input type="text" id="staffRole" required style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;">
+                        </div>
+                        <div>
+                            <label for="staffContact" style="display: block; margin-bottom: 5px; font-weight: bold;">Contact Info:</label>
+                            <input type="text" id="staffContact" style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem;">
+                        </div>
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                        	<button type="submit" class="tab-btn save-btn" id="saveStaffBtn">Save Staff</button>
+							<button type="button" class="tab-btn cancel-btn" id="cancelStaffFormBtn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2025 HotelSys. All rights reserved.</p>
+        </footer>
+
+        <script src="hotel-details.js"></script>
+    </body>
+</html>

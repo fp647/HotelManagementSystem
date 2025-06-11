@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Hotel Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, button { margin: 5px; padding: 5px; }
+        table { border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h2>Hotel Management</h2>
+
+    <form id="hotelForm">
+        <input type="hidden" id="hotelId">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="text" id="address" placeholder="Address" required>
+        <input type="text" id="city" placeholder="City" required>
+        <input type="text" id="country" placeholder="Country" required>
+        <input type="text" id="phone" placeholder="Phone" required>
+        <button type="submit">Save</button>
+        <button type="button" onclick="resetForm()">Clear</button>
+    </form>
+
+    <table id="hotelTable">
+        <thead>
+            <tr>
+                <th>Name</th><th>Address</th><th>City</th><th>Country</th><th>Phone</th><th>Actions</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        document.getElementById("hotelForm").addEventListener("submit", function (e) {
+            e.preventDefault();
+            const id = document.getElementById("hotelId").value;
+            const hotel = {
+                id: id ? parseInt(id) : undefined,
+                name: document.getElementById("name").value,
+                address: document.getElementById("address").value,
+                city: document.getElementById("city").value,
+                country: document.getElementById("country").value,
+                phone: document.getElementById("phone").value
+            };
+            fetch("/HotelManagementSystem/api/hotels", {
+                method: id ? "PUT" : "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(hotel)
+            }).then(loadHotels);
+            resetForm();
+        });
+
+        function resetForm() {
+            document.getElementById("hotelForm").reset();
+            document.getElementById("hotelId").value = "";
+        }
+
+        function loadHotels() {
+            fetch("/HotelManagementSystem/api/hotels")
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.querySelector("#hotelTable tbody");
+                    tableBody.innerHTML = "";
+                    data.forEach(hotel => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${hotel.name}</td>
+                            <td>${hotel.address}</td>
+                            <td>${hotel.city}</td>
+                            <td>${hotel.country}</td>
+                            <td>${hotel.phone}</td>
+                            <td>
+                                <button onclick='editHotel(${JSON.stringify(hotel)})'>Edit</button>
+                                <button onclick='deleteHotel(${hotel.id})'>Delete</button>
+                            </td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                });
+        }
+
+        function editHotel(hotel) {
+            document.getElementById("hotelId").value = hotel.id;
+            document.getElementById("name").value = hotel.name;
+            document.getElementById("address").value = hotel.address;
+            document.getElementById("city").value = hotel.city;
+            document.getElementById("country").value = hotel.country;
+            document.getElementById("phone").value = hotel.phone;
+        }
+
+        function deleteHotel(id) {
+            if (confirm("Delete this hotel?")) {
+                fetch("/HotelManagementSystem/api/hotels?id=${id}", { method: "DELETE" })
+                    .then(loadHotels);
+            }
+        }
+
+        // Initial load
+        loadHotels();
+    </script>
+</body>
+</html>

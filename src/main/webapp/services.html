@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select Services</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .service-card {
+      background: white;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 10px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+	.service-card label {
+	 cursor: pointer;
+	 display: flex;
+	 align-items: center;
+	 gap: 8px;
+}
+	.service-card label input[type="checkbox"] {
+  	 flex-shrink: 0;
+  	 width: 18px;
+  	 height: 18px;
+  	 vertical-align: middle;
+  	 position: relative;
+  	 top: 5px;
+}
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+    <nav><ul><li><a href="index.html">Home</a></li></ul></nav>
+  </header>
+
+  <section class="hero">
+    <h1>Select Additional Services</h1>
+    <p>Enhance your stay by choosing services offered by the hotel.</p>
+  </section>
+
+  <section class="form-section" id="serviceList">
+    <!-- services will be injected here -->
+  </section>
+
+  <div style="text-align:center; margin-bottom:40px;">
+    <button onclick="submitSelectedServices()">Confirm Services</button>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const hotelId = sessionStorage.getItem("hotelId");
+    const checkin = sessionStorage.getItem("checkin");
+    const checkout = sessionStorage.getItem("checkout");
+    const guests = sessionStorage.getItem("guests");
+    const rooms = JSON.parse(sessionStorage.getItem("rooms") || "[]");
+    
+    console.log("Hotel ID:", hotelId);
+    console.log("Selected rooms:", rooms);
+    console.log("Check-in:", checkin, "Check-out:", checkout, "Guests:", guests);
+
+    async function loadServices() {
+      const response = await fetch(`http://localhost:8080/HotelManagementSystem/api/services?hotelId=${hotelId}`);
+      const services = await response.json();
+
+      const container = document.getElementById("serviceList");
+      if (services.length === 0) {
+        container.innerHTML = "<p>No services available for this hotel.</p>";
+        return;
+      }
+
+      services.forEach(service => {
+    	  const div = document.createElement("div");
+    	  div.className = "service-card";
+    	  div.innerHTML = `
+    	    <label>
+    	      <input type="checkbox" value="${service.id}" />
+    	      <strong>${service.name}</strong> – ${service.price.toFixed(2)} €  (Per Day).
+    	    </label>
+    	  `;
+    	  container.appendChild(div);
+    	});
+
+    }
+
+    function submitSelectedServices() {
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+      if (selected.length === 0) {
+        alert("Please select at least one service or click Confirm to continue without any.");
+      } else {
+        alert("Selected service IDs: " + selected.join(", "));
+        sessionStorage.setItem("selectedServiceIds", JSON.stringify(selected));
+
+        window.location.href = "booking-summary.html";
+      }
+    }
+
+    loadServices();
+  </script>
+</body>
+</html>

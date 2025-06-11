@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bookings - Hotel Management System</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+        /* Add some basic styling for the bookings table */
+        .bookings-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .bookings-container h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .bookings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .bookings-table th, .bookings-table td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        .bookings-table th {
+            background-color: #f2f2f2;
+            color: #555;
+            font-weight: bold;
+        }
+        /* Remove default even/odd row coloring to let status colors dominate */
+        /* .bookings-table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        } */
+        .bookings-table tbody tr:hover {
+            background-color: #e9e9e9;
+        }
+        .no-bookings {
+            text-align: center;
+            color: #777;
+            padding: 20px;
+        }
+        .filter-controls, .search-controls {
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .filter-controls label, .search-controls label {
+            margin-right: 5px;
+            font-weight: bold;
+        }
+        .filter-controls select, .search-controls input[type="text"] {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            min-width: 180px;
+        }
+        .search-controls button {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .search-controls button:hover {
+            background-color: #0056b3;
+        }
+        /* Style for the status dropdown */
+        .status-dropdown {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: #f8f8f8;
+            cursor: pointer;
+        }
+        .status-dropdown:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        /* NEW STATUS COLORS */
+        .status-row-checked_in {
+            background-color: #e6ffe6; /* Light Green */
+        }
+        .status-row-checked_out {
+            background-color: #e6f7ff; /* Light Blue */
+        }
+        .status-row-cancelled {
+            background-color: #ffe6e6; /* Light Red */
+        }
+        .status-row-pending {
+            background-color: #fff0e6; /* Light Orange */
+        }
+        .status-row-confirmed {
+            background-color: #ffffff; /* White */
+        }
+    </style>
+</head>
+<body>
+    <header class="navbar">
+        <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+        <nav>
+            <ul>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="index.html">Check Availability</a></li>
+                <li><a href="bookings.html">Bookings</a></li>
+                <li><a href="hotel.html">Hotels & Rooms</a></li>
+                <li><a href="customers.html">Customers</a></li>
+                <li><a href="#">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="bookings-container">
+        <h1>Bookings Overview</h1>
+
+        <div class="search-controls">
+            <label for="searchField">Search Booking:</label>
+    		<input type="text" id="searchField" placeholder="Booking ID, Customer ID, Last Name" style="width: 400px;">
+            <button id="searchButton">Search</button>
+            <button id="clearSearchButton">Clear Search</button>
+        </div>
+
+        <div class="filter-controls">
+            <label for="hotelFilter">Filter by Hotel:</label>
+            <select id="hotelFilter">
+                <option value="">All Hotels</option>
+                </select>
+        </div>
+
+        <table class="bookings-table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Customer Name</th>
+                    <th>Check-in Date</th>
+                    <th>Check-out Date</th>
+                    <th>Status</th>
+                    <th>Room Numbers</th>
+                </tr>
+            </thead>
+            <tbody id="bookingsTableBody">
+                </tbody>
+        </table>
+        <p id="noBookingsMessage" class="no-bookings" style="display: none;">No bookings found.</p>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 HotelSys. All rights reserved.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchHotelsAndPopulateFilter();
+            fetchBookings();
+        });
+
+        async function fetchHotelsAndPopulateFilter() {
+            const hotelFilter = document.getElementById('hotelFilter');
+            try {
+                const response = await fetch('/HotelManagementSystem/api/hotels');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const hotels = await response.json();
+
+                hotels.forEach(hotel => {
+                    const option = document.createElement('option');
+                    option.value = hotel.id;
+                    option.textContent = hotel.name;
+                    hotelFilter.appendChild(option);
+                });
+
+                hotelFilter.addEventListener('change', fetchBookings);
+
+            } catch (error) {
+                console.error('Error fetching hotels:', error);
+            }
+        }
+
+        async function fetchBookings() {
+            const bookingsTableBody = document.getElementById('bookingsTableBody');
+            const noBookingsMessage = document.getElementById('noBookingsMessage');
+            const searchField = document.getElementById('searchField');
+            const hotelFilter = document.getElementById('hotelFilter');
+
+            const searchTerm = searchField.value.trim();
+            const selectedHotelId = hotelFilter.value;
+
+            bookingsTableBody.innerHTML = ''; 
+            noBookingsMessage.style.display = 'none';
+
+            let baseUrl = '/HotelManagementSystem/api/bookings';
+            let params = [];
+
+            if (searchTerm) {
+                if (!isNaN(searchTerm) && searchTerm !== '') {
+                    try {
+                        const idResponse = await fetch(`${baseUrl}?id=${searchTerm}`);
+                        if (idResponse.ok) {
+                            const booking = await idResponse.json();
+                            if (booking && booking.id) {
+                                displayBookings([booking]);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("Booking ID search failed or returned no single booking:", e);
+                    }
+                    params.push(`customer_id=${searchTerm}`);
+                } else {
+                    params.push(`customer_last_name=${encodeURIComponent(searchTerm)}`);
+                }
+            } else {
+                params.push(`status=current`);
+            }
+
+            if (selectedHotelId) {
+                params.push(`hotel_id=${selectedHotelId}`);
+            }
+            
+            const url = `${baseUrl}?${params.join('&')}`;
+            
+            try {
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    if (response.status === 404 && searchTerm && !isNaN(searchTerm) && !selectedHotelId) { 
+                         noBookingsMessage.textContent = 'Booking not found.';
+                         noBookingsMessage.style.display = 'block';
+                         return;
+                    }
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${response.statusText}`);
+                }
+                const bookings = await response.json();
+
+                displayBookings(bookings);
+            } catch (error) {
+                console.error('Error fetching bookings:', error);
+                bookingsTableBody.innerHTML = '<tr><td colspan="6" style="color: red; text-align: center;">Failed to load bookings. Please try again.</td></tr>';
+                noBookingsMessage.style.display = 'none'; 
+            }
+        }
+
+        function displayBookings(bookings) {
+            const bookingsTableBody = document.getElementById('bookingsTableBody');
+            const noBookingsMessage = document.getElementById('noBookingsMessage');
+            const statusOptions = ['pending', 'confirmed', 'cancelled', 'checked_in', 'checked_out']; 
+
+            bookingsTableBody.innerHTML = '';
+            noBookingsMessage.style.display = 'none';
+
+            if (bookings.length === 0) {
+                noBookingsMessage.textContent = 'No bookings found matching your criteria.';
+                noBookingsMessage.style.display = 'block';
+            } else {
+                bookings.forEach(booking => {
+                    const row = bookingsTableBody.insertRow();
+                    row.classList.add(`status-row-${booking.status.toLowerCase().replace(/\s/g, '_')}`); // Normalize status for class name
+                    
+                    row.insertCell().textContent = booking.id;
+                    row.insertCell().textContent = `${booking.customerFirstName} ${booking.customerLastName}`;
+                    row.insertCell().textContent = booking.checkInDate;
+                    row.insertCell().textContent = booking.checkOutDate;
+                    
+                    const statusCell = row.insertCell();
+                    const statusSelect = document.createElement('select');
+                    statusSelect.className = 'status-dropdown';
+                    statusSelect.dataset.bookingId = booking.id;
+
+                    statusOptions.forEach(optionText => {
+                        const option = document.createElement('option');
+                        option.value = optionText;
+                        let displayText = optionText.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                        option.textContent = displayText; 
+                        if (optionText === booking.status) {
+                            option.selected = true;
+                        }
+                        statusSelect.appendChild(option);
+                    });
+
+                    statusSelect.addEventListener('change', async (event) => {
+                        const newStatus = event.target.value;
+                        const bookingId = event.target.dataset.bookingId;
+                        await updateBookingStatus(bookingId, newStatus);
+                        // Reapply class to the row immediately after successful update for feedback
+                        const currentRow = event.target.closest('tr');
+                        if (currentRow) {
+                            // Remove all existing status classes
+                            statusOptions.forEach(opt => {
+                                currentRow.classList.remove(`status-row-${opt.toLowerCase().replace(/\s/g, '_')}`);
+                            });
+
+                            currentRow.classList.add(`status-row-${newStatus.toLowerCase().replace(/\s/g, '_')}`);
+                        }
+                    });
+
+                    statusCell.appendChild(statusSelect);
+                    
+                    row.insertCell().textContent = booking.roomNumbers ? booking.roomNumbers.join(', ') : 'N/A';
+                });
+            }
+        }
+
+        async function updateBookingStatus(bookingId, newStatus) {
+            try {
+                const response = await fetch('/HotelManagementSystem/api/bookings', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: parseInt(bookingId),
+                        status: newStatus
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`);
+                }
+
+                const result = await response.json();
+                alert(result.message);
+
+            } catch (error) {
+                console.error('Error updating booking status:', error);
+                alert('Failed to update booking status: ' + error.message);
+            }
+        }
+
+        document.getElementById('searchButton').addEventListener('click', fetchBookings);
+        document.getElementById('clearSearchButton').addEventListener('click', function() {
+            document.getElementById('searchField').value = '';
+            document.getElementById('hotelFilter').value = '';
+            fetchBookings();
+        });
+        document.getElementById('searchField').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                fetchBookings();
+            }
+        });
+    </script>
+</body>
+</html>

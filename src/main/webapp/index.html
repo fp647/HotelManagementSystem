@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Check Availability</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .form-section {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .form-section label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+
+    .form-section input,
+    .form-section select,
+    .form-section button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    .form-section button {
+      background-color: #2980b9;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .form-section button:hover {
+      background-color: #3498db;
+    }
+
+    .results {
+      max-width: 800px;
+      margin: 20px auto;
+    }
+
+    .room-card {
+      background: white;
+      padding: 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .room-card button {
+      margin-top: 10px;
+      background-color: #27ae60;
+    }
+
+    .room-card button:hover {
+      background-color: #2ecc71;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+    <nav>
+      <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="index.html">Check Availability</a></li>
+        <li><a href="bookings.html">Bookings</a></li>
+        <li><a href="hotel.html">Hotels & Rooms</a></li>
+        <li><a href="customers.html">Customers</a></li>
+        <li><a href="login.html">Logout</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>Check Room Availability</h1>
+    <p>Choose your dates and preferences to find the perfect room.</p>
+  </section>
+
+  <section class="form-section">
+    <label for="hotel">Hotel</label>
+		<select id="hotel">
+  <option disabled selected>Loading hotels...</option>
+		</select>
+
+
+    <label for="checkin">Check-in Date</label>
+    <input type="date" id="checkin" />
+
+    <label for="checkout">Check-out Date</label>
+    <input type="date" id="checkout" />
+
+    <label for="guests">Number of Guests</label>
+    <input type="number" id="guests" min="1" value="1" />
+
+    <label for="rooms">Number of Rooms</label>
+    <input type="number" id="rooms" min="1" value="1" />
+
+    <button onclick="checkAvailability()">Check Availability</button>
+  </section>
+
+  <section class="results" id="results"></section>
+
+  <footer>
+    <p>&copy; 2025 HotelSys. All rights reserved.</p>
+  </footer>
+
+<script>
+	// Populate hotels from API
+	async function loadHotels() {
+	  const hotelSelect = document.getElementById("hotel");
+	  try {
+		const response = await fetch("http://localhost:8080/HotelManagementSystem/api/hotels");
+		const hotels = await response.json();
+
+		hotelSelect.innerHTML = '<option disabled selected>Select a hotel</option>';
+		hotels.forEach(hotel => {
+		  const option = document.createElement("option");
+		  option.value = hotel.id;
+		  option.textContent = hotel.name;
+		  hotelSelect.appendChild(option);
+		});
+	  } catch (err) {
+		console.error("Failed to load hotels:", err);
+		hotelSelect.innerHTML = '<option disabled>Error loading hotels</option>';
+	  }
+	}
+  // Set minimum date to today for date inputs
+	window.onload = () => {
+	  loadHotels();
+
+	  const today = new Date().toISOString().split("T")[0];
+	  document.getElementById("checkin").setAttribute("min", today);
+	  document.getElementById("checkout").setAttribute("min", today);
+	};
+
+  async function checkAvailability() {
+    const dateFrom = document.getElementById("checkin").value;
+    const dateTo = document.getElementById("checkout").value;
+    const guests = document.getElementById("guests").value;
+    const rooms = document.getElementById("rooms").value;
+
+    if (!dateFrom || !dateTo || new Date(dateFrom) >= new Date(dateTo)) {
+      alert("Please select valid check-in and check-out dates.");
+      return;
+    }
+    const hotelId = document.getElementById("hotel").value;
+    //const url = `http://localhost:8080/HotelManagementSystem/api/rooms/availability?dateFrom=${dateFrom}&dateTo=${dateTo}&guests=${guests}&rooms=${rooms}`;
+	const url = `http://localhost:8080/HotelManagementSystem/api/rooms/availability?hotelId=${hotelId}&dateFrom=${dateFrom}&dateTo=${dateTo}&guests=${guests}&rooms=${rooms}`;
+
+	if (!hotelId) {
+		  alert("Please select a hotel.");
+		  return;
+		}
+    if (guests <= 0 || rooms <= 0) {
+        alert("Number of guests and rooms must be at least 1.");
+        return;
+    }
+
+    if (guests < rooms) {
+        alert("Number of guests cannot be less than the number of rooms.");
+        return;
+    }
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const resultsDiv = document.getElementById("results");
+      resultsDiv.innerHTML = "";
+
+      if (Array.isArray(data) && data.length > 0) {
+        data.forEach(room => {
+          const div = document.createElement("div");
+          div.className = "room-card";
+          div.innerHTML = `
+        	  <h3>${room.category}</h3>
+        	  <p><strong>Capacity:</strong> ${room.maxOccupancy}</p>
+        	  <p><strong>Price per night:</strong> €${room.basePrice}</p>
+        	  <label for="roomCount_${room.category}">Select number of rooms:</label>
+        	  <select id="roomCount_${room.category}">
+        	    ${Array.from({ length: room.available + 1 }, (_, i) => `<option value="${i}">${i}</option>`).join("")}
+        	  </select>
+        	`;
+          resultsDiv.appendChild(div);
+        });
+        const continueBtn = document.createElement("button");
+        continueBtn.textContent = "Continue";
+        continueBtn.style.marginTop = "20px";
+        continueBtn.onclick = () => {
+        	  const guests = parseInt(document.getElementById("guests").value, 10);
+        	  let totalSelectedRooms = 0;
+        	  let totalCapacity = 0;
+
+        	  data.forEach(room => {
+        	    const count = parseInt(document.getElementById(`roomCount_${room.category}`).value, 10);
+        	    totalSelectedRooms += count;
+        	    totalCapacity += count * room.maxOccupancy;
+        	  });
+
+        	  if (totalSelectedRooms === 0) {
+        	    alert("Please select at least one room to continue.");
+        	    return;
+        	  }
+
+        	  if (totalSelectedRooms > guests) {
+        	    alert("You cannot select more rooms than the number of guests.");
+        	    return;
+        	  }
+
+        	  if (totalCapacity < guests) {
+        	    alert("Selected rooms cannot accommodate all guests. Please choose rooms with enough total capacity.");
+        	    return;
+        	  }
+
+        	  proceedToServices(data, hotelId);
+        	};
+        resultsDiv.appendChild(continueBtn);
+      } else {
+        resultsDiv.innerHTML = "<p>No rooms available for the selected criteria.</p>";
+      }
+    } catch (err) {
+      console.error("Error fetching availability:", err);
+      document.getElementById("results").innerHTML = "<p>There was an error checking availability.</p>";
+    }
+  }
+
+  function proceedToServices(data, hotelId) {
+	  const checkin = document.getElementById("checkin").value;
+	  const checkout = document.getElementById("checkout").value;
+	  const guests = document.getElementById("guests").value;
+
+	  const selectedRooms = [];
+
+	  data.forEach(room => {
+	    const count = parseInt(document.getElementById(`roomCount_${room.category}`).value);
+	    if (count > 0) {
+	      selectedRooms.push({
+	        category: room.category,
+	        count: count,
+	        basePrice: room.basePrice,
+	        maxOccupancy: room.maxOccupancy
+	      });
+	    }
+	  });
+
+	  if (selectedRooms.length === 0) {
+	    alert("Please select at least one room.");
+	    return;
+	  }
+
+	  sessionStorage.setItem("hotelId", hotelId);
+	  sessionStorage.setItem("checkin", checkin);
+	  sessionStorage.setItem("checkout", checkout);
+	  sessionStorage.setItem("guests", guests);
+	  sessionStorage.setItem("rooms", JSON.stringify(selectedRooms));
+	  
+	  window.location.href = "services.html";
+	}
+
+
+</script>
+
+</body>
+</html>

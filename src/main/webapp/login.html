@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - SRH GROUP OF HOTELS</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .login-container {
+      max-width: 400px;
+      margin: 80px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .login-container h2 {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .login-container label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+
+    .login-container input, .login-container select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .login-container button {
+      width: 100%;
+      padding: 10px;
+      background: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login-container button:hover {
+      background: #1c5980;
+    }
+
+    .guest-btn {
+      background: transparent;
+      color: #2980b9;
+      border: none;
+      margin-top: 10px;
+      text-align: center;
+      display: block;
+      cursor: pointer;
+    }
+
+    .guest-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="logo">🏨 SRH GROUP OF HOTELS</div>
+    <nav>
+      <ul>
+       
+      </ul>
+    </nav>
+  </header>
+
+  <div class="login-container">
+    <h2>Login</h2>
+    <form action="login" method="post">
+
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" required />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" required />
+
+      <button type="submit">Login</button>
+    </form>
+
+    <button class="guest-btn" onclick="window.location.href='index.html'">Continue as Guest</button>
+  </div>
+
+  <footer>
+    <p>&copy; 2025 HotelSys. All rights reserved.</p>
+  </footer>
+</body>
+</html>
